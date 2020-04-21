@@ -14,6 +14,15 @@ data = json.load(sys.stdin);
 for x in range(1, len(sys.argv), 2):
   key=sys.argv[x];
   value=sys.argv[x+1];
+
+  try:
+    value = int(value)
+  except ValueError:
+    try:
+      value = float(value);
+    except ValueError:
+      value = value;
+
   data[key]=value;
 
 
