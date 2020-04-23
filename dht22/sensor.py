@@ -21,6 +21,9 @@ report = {
   "humidity": round(humidity,3),
   "temperature": round(temperature,3)
 }
+if (humidity > 105.0) || (temperature > 100):
+  report = { "error": "nonsense values" }
+
 
 print(json.dumps(report));
 
