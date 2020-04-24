@@ -65,7 +65,9 @@ public class Lert
     new LertThread(new LertAgent(this, new ConfigFreezer("general_stores","freezer"))).start();
     
     new LertThread(new LertAgent(this, new ConfigHumidity("server_room","room_air"))).start();
-    new LertThread(new LertAgent(this, new ConfigHumidity("garage","room_air"))).start();
+    //new LertThread(new LertAgent(this, new ConfigHumidity("garage","room_air"))).start();
+    new LertThread(new LertAgent(this, new ConfigServerRoom("server_room","room_air"))).start();
+    //new LertThread(new LertAgent(this, new ConfigServerRoom("garage","room_air"))).start();
 
   }
 
