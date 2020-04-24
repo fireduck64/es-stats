@@ -14,7 +14,9 @@ java_library(
     "@maven//:org_elasticsearch_client_elasticsearch_rest_high_level_client",
     "@maven//:org_apache_httpcomponents_httpcore",
     "@maven//:org_elasticsearch_elasticsearch",
-
+    "@maven//:com_google_guava_guava",
+    "@maven//:com_amazonaws_aws_java_sdk_sns",
+    "@maven//:com_amazonaws_aws_java_sdk_core",
   ],
 )
 
