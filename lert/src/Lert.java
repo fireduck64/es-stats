@@ -1,38 +1,28 @@
 package duckutil.lert;
 
+import com.amazonaws.auth.BasicAWSCredentials;
+import com.amazonaws.services.sns.AmazonSNSClient;
 import duckutil.Config;
 import duckutil.ConfigFile;
-import net.minidev.json.parser.JSONParser;
-import net.minidev.json.JSONObject;
-import net.minidev.json.JSONArray;
-import org.apache.http.HttpHost;
-import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.client.RestClient;
-import java.net.URL;
-import org.elasticsearch.action.search.SearchRequest;
-import java.text.SimpleDateFormat;
-import java.util.Calendar;
-import org.elasticsearch.search.SearchHit;
-import java.util.TreeSet;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.elasticsearch.action.search.SearchResponse;
-import java.util.ArrayList;
-import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.search.sort.SortOrder;
-import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.index.query.BoolQueryBuilder;
-import java.util.Map;
-import com.google.common.collect.ImmutableMap;
-import org.elasticsearch.action.update.UpdateRequestBuilder;
-import org.elasticsearch.action.update.UpdateAction;
-import java.net.HttpURLConnection;
-import net.minidev.json.JSONObject;
-import java.util.Date;
-import java.time.ZonedDateTime;
 import java.io.OutputStream;
-import com.amazonaws.services.sns.AmazonSNSClient;
-import com.amazonaws.auth.BasicAWSCredentials;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Map;
+import net.minidev.json.JSONObject;
+import org.apache.http.HttpHost;
+import org.elasticsearch.action.search.SearchRequest;
+import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.RestClient;
+import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.search.SearchHit;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.elasticsearch.search.sort.SortOrder;
 
 public class Lert
 {
@@ -68,6 +58,29 @@ public class Lert
     new LertThread(new LertAgent(this, new ConfigHumidity("garage","room_air"))).start();
     new LertThread(new LertAgent(this, new ConfigServerRoom("server_room","room_air"))).start();
     new LertThread(new LertAgent(this, new ConfigServerRoom("garage","room_air"))).start();
+    
+    
+    new LertThread(new LertAgent(this, new ConfigWeb("fireduck.com"))).start();
+    new LertThread(new LertAgent(this, new ConfigWeb("1209k.com"))).start();
+    new LertThread(new LertAgent(this, new ConfigWeb("explorer.snowblossom.org"))).start();
+    new LertThread(new LertAgent(this, new ConfigWeb("wiki.snowblossom.org"))).start();
+    new LertThread(new LertAgent(this, new ConfigWeb("chan-relay.snowblossom.org"))).start();
+
+    new LertThread(new LertAgent(this, new ConfigSnow("teapot","snowblossom"))).start();
+    new LertThread(new LertAgent(this, new ConfigSnow("teapot","snow-test-a"))).start();
+    new LertThread(new LertAgent(this, new ConfigSnow("teapot","snow-test-b"))).start();
+    new LertThread(new LertAgent(this, new ConfigSnow("snowblossom","snow-a.1209k.com"))).start();
+    new LertThread(new LertAgent(this, new ConfigSnow("snowblossom","snow-b.1209k.com"))).start();
+    new LertThread(new LertAgent(this, new ConfigSnow("snowblossom","snow-tx1.snowblossom.org"))).start();
+    new LertThread(new LertAgent(this, new ConfigSnow("snowblossom","snow-de1.snowblossom.org"))).start();
+    new LertThread(new LertAgent(this, new ConfigSnow("snowblossom","ryzen"))).start();
+    new LertThread(new LertAgent(this, new ConfigSnow("snowblossom","ogog"))).start();
+    
+    new LertThread(new LertAgent(this, new ConfigProcess("bitcoin-price-notify"))).start();
+    new LertThread(new LertAgent(this, new ConfigProcess("bitcoin-cash-price-notify"))).start();
+    new LertThread(new LertAgent(this, new ConfigProcess("ethereum-price-notify"))).start();
+    new LertThread(new LertAgent(this, new ConfigProcess("snowblossom-price-notify"))).start();
+    new LertThread(new LertAgent(this, new ConfigProcess("stock-price-notify"))).start();
 
   }
 
@@ -142,15 +155,20 @@ public class Lert
       BoolQueryBuilder bqb =  QueryBuilders.boolQuery();
       for(Map.Entry<String, String> me : filter_terms.entrySet())
       {
-        bqb.filter( QueryBuilders.termQuery(me.getKey(), me.getValue() ) );
+        bqb.filter( QueryBuilders.matchQuery(me.getKey(), me.getValue() ) );
       }   
       qb = bqb;
     }
+    //System.out.println(qb);
     req.source(
       new SearchSourceBuilder().size(results).sort("timestamp", SortOrder.DESC).query(qb)
       );
+    //System.out.println(req);
 
-    return es_client.search(req,RequestOptions.DEFAULT);
+    SearchResponse resp = es_client.search(req,RequestOptions.DEFAULT);
+
+    //System.out.println(resp);
+    return resp;
 
   }
 

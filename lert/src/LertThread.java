@@ -1,8 +1,10 @@
 package duckutil.lert;
 
-import duckutil.PeriodicThread;
 import com.google.common.collect.ImmutableMap;
+import duckutil.Pair;
+import duckutil.PeriodicThread;
 import java.util.Map;
+import java.util.Random;
 
 public class LertThread extends PeriodicThread
 {
@@ -27,15 +29,19 @@ public class LertThread extends PeriodicThread
   {
     if (!first_pass_done)
     {
+      Random rnd = new Random();
+      sleep(rnd.nextInt(2000));
       first_pass_done=true;
       loadLastState();
     }
-    LertState state = agent.getCurrentState();
-    System.out.println(agent.getID() + " - " + agent.getCurrentState());    
+
+    Pair<LertState, String> p = agent.getCurrentState();
+    LertState state = p.getA();
+    System.out.println(agent.getID() + " - " + p);    
 
     if (!state.equals(last_state))
     {
-      notifyState(state);   
+      notifyState(state, p.getB());   
       last_state = state;
     }
 
@@ -43,12 +49,12 @@ public class LertThread extends PeriodicThread
     {
       if (System.currentTimeMillis() - last_state_notify > agent.getConfig().getReAlertTimeMs())
       {
-        notifyState(state);
+        notifyState(state, p.getB());
       }
     }
 
   }
-  private void notifyState(LertState state)
+  private void notifyState(LertState state, String msg)
     throws Exception
   {
     // do SNS notification
@@ -57,12 +63,12 @@ public class LertThread extends PeriodicThread
     sb.append("\n");
     sb.append("New State: " + state);
     sb.append("\n");
+    sb.append("Message: " + msg);
+    sb.append("\n");
+
 
 
     agent.getLert().publish( agent.getConfig().getAlertTopicArn(),agent.getID() +":" + state,sb.toString());
-    
-
-
   
     agent.getLert().saveDoc("lert_status", ImmutableMap.of("agent",agent.getID(),"state", state.toString()));
     last_state_notify = System.currentTimeMillis();
@@ -76,6 +82,10 @@ public class LertThread extends PeriodicThread
     {
       last_state_notify = (long) last_doc.get("time_ms");
       last_state = LertState.valueOf( (String) last_doc.get("state") );
+    }
+    else
+    {
+      System.out.println("No last state for: " + agent.getID());
     }
 
   }

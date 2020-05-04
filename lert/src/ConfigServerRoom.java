@@ -2,7 +2,6 @@ package duckutil.lert;
 import com.google.common.collect.ImmutableMap;
 import java.util.Map;
 
-
 /**
  * For a room we expect to be a bit hot, but not freezing and not too hot
  */

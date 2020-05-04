@@ -1,12 +1,14 @@
 package duckutil.lert;
 
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.search.SearchHits;
-import org.elasticsearch.search.SearchHit;
-import java.util.Map;
+import duckutil.Pair;
 import java.text.SimpleDateFormat;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
+import java.time.temporal.Temporal;
+import java.util.Map;
+import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.search.SearchHit;
+import org.elasticsearch.search.SearchHits;
 
 public class LertAgent
 {
@@ -23,7 +25,10 @@ public class LertAgent
   public String getID(){return l_config.getID();}
   public Lert getLert(){return lert;}
 
-  public LertState getCurrentState()
+  
+
+
+  public Pair<LertState, String> getCurrentState()
     throws Exception
   {
     SearchResponse search = lert.getLatest(l_config.getIndexBase(), 250, l_config.getFilterTerms());
@@ -31,21 +36,42 @@ public class LertAgent
 
     long age_of_recent_value=1000000000L;
     long age_of_recent_good_value=1000000000L;
-    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX");
+
+    Double most_recent_value = null;
+
 
     for(SearchHit hit : hits)
     {
       Map<String,Object> source_doc = hit.getSourceAsMap();
       String timestamp = (String)source_doc.get("timestamp");
-      if (!timestamp.endsWith("Z")) timestamp = timestamp +"Z";
+      if (!timestamp.endsWith("Z"))
+      {
+        if (!timestamp.endsWith("-0700"))
+        {
+          timestamp = timestamp +"Z";
+        }
+      }
 
-      ZonedDateTime z = ZonedDateTime.parse(timestamp);
+      Temporal z = null;
+      
+      try
+      {
+        z = ZonedDateTime.parse(timestamp);
+      }
+      catch(java.time.format.DateTimeParseException e)
+      {
+        SimpleDateFormat sdf_iso = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
+        z = sdf_iso.parse(timestamp).toInstant();
+
+      }
       ZonedDateTime now = ZonedDateTime.now();
       long age = z.until(now, ChronoUnit.MILLIS);
       //System.out.println("" + z + " " + age);
       Double val = extractValue(source_doc, l_config.getValuePath());
       if (val != null)
       {
+        if (most_recent_value == null) most_recent_value = val;
+
         age_of_recent_value = Math.min(age, age_of_recent_value);
         if (isGood(val))
         {
@@ -53,9 +79,17 @@ public class LertAgent
         }
       }
     }
-    if (age_of_recent_good_value < l_config.maxLookbackMs()) return LertState.OK;
-    if (age_of_recent_value < l_config.maxLookbackMs()) return LertState.BAD;
-    return LertState.MISSING;
+
+    if (age_of_recent_good_value < l_config.maxLookbackMs())
+    {
+      return new Pair(LertState.OK, "recent "+l_config.getValuePath()+": " + most_recent_value);
+    }
+    if (age_of_recent_value < l_config.maxLookbackMs())
+    {
+      return new Pair(LertState.BAD, "recent "+l_config.getValuePath()+": " + most_recent_value);
+    }
+
+    return new Pair(LertState.MISSING, "MISSING");
 
   }
 
@@ -64,7 +98,9 @@ public class LertAgent
     Object o = search_doc.get(path);
     if (o == null) return null;
     if (o instanceof Long){double v = (long)o; return v;}
+    if (o instanceof Integer){double v = (int)o; return v;}
     if (o instanceof Double){double v = (double)o; return v;}
+    System.out.println("Val: " + o);
     return null;
   }
 
