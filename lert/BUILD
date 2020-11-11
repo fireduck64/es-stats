@@ -17,12 +17,21 @@ java_library(
     "@maven//:com_google_guava_guava",
     "@maven//:com_amazonaws_aws_java_sdk_sns",
     "@maven//:com_amazonaws_aws_java_sdk_core",
+    "@maven//:org_eclipse_paho_org_eclipse_paho_client_mqttv3",
   ],
 )
 
 java_binary(
   name = "Lert",
   main_class = "duckutil.lert.Lert",
+  runtime_deps = [
+    ":lertlib",
+  ],
+)
+
+java_binary(
+  name = "QMon",
+  main_class = "duckutil.lert.QMon",
   runtime_deps = [
     ":lertlib",
   ],

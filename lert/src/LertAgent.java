@@ -25,8 +25,6 @@ public class LertAgent
   public String getID(){return l_config.getID();}
   public Lert getLert(){return lert;}
 
-  
-
 
   public Pair<LertState, String> getCurrentState()
     throws Exception
@@ -82,11 +80,11 @@ public class LertAgent
 
     if (age_of_recent_good_value < l_config.maxLookbackMs())
     {
-      return new Pair(LertState.OK, "recent "+l_config.getValuePath()+": " + most_recent_value);
+      return new Pair(LertState.OK, ""+l_config.getValuePath()+": " + most_recent_value);
     }
     if (age_of_recent_value < l_config.maxLookbackMs())
     {
-      return new Pair(LertState.BAD, "recent "+l_config.getValuePath()+": " + most_recent_value);
+      return new Pair(LertState.BAD, ""+l_config.getValuePath()+": " + most_recent_value);
     }
 
     return new Pair(LertState.MISSING, "MISSING");

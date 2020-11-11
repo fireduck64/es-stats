@@ -23,6 +23,7 @@ import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.SortOrder;
+import org.elasticsearch.index.query.Operator;
 
 public class Lert
 {
@@ -34,6 +35,7 @@ public class Lert
   private final Config config;
   private final RestHighLevelClient es_client;
   private final AmazonSNSClient sns;
+  private final StatusRegistry reg;
 
   public Lert(Config config) throws Exception
   {
@@ -42,8 +44,13 @@ public class Lert
     config.require("alert_topic_arn");
     config.require("aws_key_id");
     config.require("aws_secret");
+    config.require("web_port");
 
     es_client = openElasticSearchClient();
+
+    reg = new StatusRegistry();
+
+    new WebServer(reg, config.getInt("web_port"));
 
     String arn = config.get("alert_topic_arn");
     LertConfig.setGlobalTopicArn(arn);
@@ -57,8 +64,7 @@ public class Lert
     new LertThread(new LertAgent(this, new ConfigHumidity("server_room","room_air"))).start();
     new LertThread(new LertAgent(this, new ConfigHumidity("garage","room_air"))).start();
     new LertThread(new LertAgent(this, new ConfigServerRoom("server_room","room_air"))).start();
-    new LertThread(new LertAgent(this, new ConfigServerRoom("garage","room_air"))).start();
-    
+    new LertThread(new LertAgent(this, new ConfigGarageRoom("garage","room_air"))).start();
     
     new LertThread(new LertAgent(this, new ConfigWeb("fireduck.com"))).start();
     new LertThread(new LertAgent(this, new ConfigWeb("1209k.com"))).start();
@@ -80,7 +86,18 @@ public class Lert
     new LertThread(new LertAgent(this, new ConfigProcess("bitcoin-cash-price-notify"))).start();
     new LertThread(new LertAgent(this, new ConfigProcess("ethereum-price-notify"))).start();
     new LertThread(new LertAgent(this, new ConfigProcess("snowblossom-price-notify"))).start();
+
     new LertThread(new LertAgent(this, new ConfigProcess("stock-price-notify"))).start();
+    new LertThread(new LertAgent(this, new ConfigProcess("allseeingeye-tracker"))).start();
+    new LertThread(new LertAgent(this, new ConfigProcess("allseeingeye-watcher"))).start();
+    new LertThread(new LertAgent(this, new ConfigProcess("allseeingeye-topicload"))).start();
+    new LertThread(new LertAgent(this, new ConfigProcess("snow-faucet"))).start();
+    
+    new LertThread(new LertAgent(this, new ConfigGood("backup","lamp"))).start();
+    new LertThread(new LertAgent(this, new ConfigAge("backup","lamp"))).start();
+    new LertThread(new LertAgent(this, new ConfigBattery("sensor.test_sensor_a_battery_level"))).start();
+
+    //new LertThread(new LertAgent(this, new ConfigAge("dropbox","ogog"))).start();
 
   }
 
@@ -123,9 +140,10 @@ public class Lert
     wr.write(doc.toJSONString().getBytes());
     wr.flush();
     wr.close();
-    System.out.println(doc.toJSONString());
 
-    System.out.println("POST code: " + connection.getResponseCode());
+    int code =  connection.getResponseCode();
+    //System.out.println(doc.toJSONString());
+    //System.out.println("POST code: " + connection.getResponseCode());
 
   }
 
@@ -137,6 +155,8 @@ public class Lert
     }
     return null;
   }
+
+  public StatusRegistry getReg(){return reg;}
 
   protected SearchResponse getLatest(String index_base, int results)
     throws Exception
@@ -155,7 +175,13 @@ public class Lert
       BoolQueryBuilder bqb =  QueryBuilders.boolQuery();
       for(Map.Entry<String, String> me : filter_terms.entrySet())
       {
-        bqb.filter( QueryBuilders.matchQuery(me.getKey(), me.getValue() ) );
+        bqb.must( QueryBuilders.matchQuery(me.getKey(), me.getValue() )
+          .operator( Operator.AND)
+          .fuzziness("0"));
+
+        // Using term to get exact match
+        //bqb.must( QueryBuilders.termQuery(me.getKey(), me.getValue() ) );
+        //bqb.must( QueryBuilders.termQuery(me.getKey(), me.getValue() ) );
       }   
       qb = bqb;
     }
@@ -175,6 +201,7 @@ public class Lert
 
   protected void publish(String topic_arn, String subject, String msg)
   {
+    System.out.println("Publish: " + subject);
     sns.publish(topic_arn, msg, subject);
 
   }

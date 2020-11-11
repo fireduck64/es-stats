@@ -38,6 +38,6 @@ public class ConfigHumidity extends LertConfig
   public Double getLowVal(){return 20.0;}
 
   @Override
-  public Double getHighVal(){return 70.0;}
+  public Double getHighVal(){return 65.0;}
 
 }

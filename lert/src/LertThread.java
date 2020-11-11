@@ -9,7 +9,6 @@ import java.util.Random;
 public class LertThread extends PeriodicThread
 {
   private LertAgent agent;
-  private Lert lert;
 
   private LertState last_state;
   private long last_state_notify;
@@ -37,6 +36,8 @@ public class LertThread extends PeriodicThread
 
     Pair<LertState, String> p = agent.getCurrentState();
     LertState state = p.getA();
+    String msg = p.getB();
+    agent.getLert().getReg().save(agent.getConfig(), state, msg);
     System.out.println(agent.getID() + " - " + p);    
 
     if (!state.equals(last_state))
@@ -65,7 +66,6 @@ public class LertThread extends PeriodicThread
     sb.append("\n");
     sb.append("Message: " + msg);
     sb.append("\n");
-
 
 
     agent.getLert().publish( agent.getConfig().getAlertTopicArn(),agent.getID() +":" + state,sb.toString());

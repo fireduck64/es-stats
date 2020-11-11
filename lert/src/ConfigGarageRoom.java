@@ -2,16 +2,19 @@ package duckutil.lert;
 import com.google.common.collect.ImmutableMap;
 import java.util.Map;
 
-public class ConfigFreezer extends LertConfig
+/**
+ * For a room we expect to be a bit cool, but not freezing and not too hot
+ */
+public class ConfigGarageRoom extends LertConfig
 {
   protected ImmutableMap<String, String> filter_terms;
   protected String id;
 
 
-  public ConfigFreezer(String zone, String location)
+  public ConfigGarageRoom(String zone, String location)
   {
     filter_terms = ImmutableMap.of("zone", zone, "location", location);
-    id=getIndexBase() + ".freezer." + zone + "." + location;
+    id=getIndexBase() + ".sroom." + zone + "." + location;
 
   }
 
@@ -19,7 +22,7 @@ public class ConfigFreezer extends LertConfig
   public String getID(){ return id; }
 
   @Override
-  public long getReAlertTimeMs(){ return 60L * 15L * 1000L;} // 15-min
+  public long getReAlertTimeMs(){ return 2L * 60L * 60L * 1000L;} // 2 hr
   @Override
   public long checkIntervalMs() {return 1L*60L*1000L; } //1 min 
   @Override
@@ -35,9 +38,9 @@ public class ConfigFreezer extends LertConfig
   public String getValuePath(){return "temperature";}
 
   @Override
-  public Double getLowVal(){return -30.0;}
+  public Double getLowVal(){return 12.0;} 
 
   @Override
-  public Double getHighVal(){return -7.0;}
+  public Double getHighVal(){return 31.0;} //90F
 
 }
