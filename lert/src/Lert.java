@@ -175,12 +175,17 @@ public class Lert
       BoolQueryBuilder bqb =  QueryBuilders.boolQuery();
       for(Map.Entry<String, String> me : filter_terms.entrySet())
       {
-        bqb.must( QueryBuilders.matchQuery(me.getKey(), me.getValue() )
+        // I can't get the term search to actually work.
+        // Also match query as keyword, should work but I can't get that to work either
+        // So we are saying it has to have all of our terms (as it splits) or string
+        // into segments and low fuzz.  Bah.
+        // ok, keywork works when you set the query to be on ".keyword"
+
+        bqb.must( QueryBuilders.matchQuery(me.getKey() +".keyword", me.getValue() )
           .operator( Operator.AND)
-          .fuzziness("0"));
+          .analyzer("keyword"));
 
         // Using term to get exact match
-        //bqb.must( QueryBuilders.termQuery(me.getKey(), me.getValue() ) );
         //bqb.must( QueryBuilders.termQuery(me.getKey(), me.getValue() ) );
       }   
       qb = bqb;
