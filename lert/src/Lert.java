@@ -92,10 +92,14 @@ public class Lert
     new LertThread(new LertAgent(this, new ConfigProcess("allseeingeye-watcher"))).start();
     new LertThread(new LertAgent(this, new ConfigProcess("allseeingeye-topicload"))).start();
     new LertThread(new LertAgent(this, new ConfigProcess("snow-faucet"))).start();
+    new LertThread(new LertAgent(this, new ConfigProcess("sign-update"))).start();
     
     new LertThread(new LertAgent(this, new ConfigGood("backup","lamp"))).start();
     new LertThread(new LertAgent(this, new ConfigAge("backup","lamp"))).start();
     new LertThread(new LertAgent(this, new ConfigBattery("sensor.test_sensor_a_battery_level"))).start();
+    
+    new LertThread(new LertAgent(this, new ConfigGeth())).start();
+    new LertThread(new LertAgent(this, new ConfigEth2Validator())).start();
 
     //new LertThread(new LertAgent(this, new ConfigAge("dropbox","ogog"))).start();
 
