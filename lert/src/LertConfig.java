@@ -1,6 +1,8 @@
 package duckutil.lert;
 
 import java.util.Map;
+import com.google.common.collect.ImmutableList;
+import java.util.List;
 
 public abstract class LertConfig
 {
@@ -14,7 +16,11 @@ public abstract class LertConfig
 
   // may be null
   public Map<String,String> getFilterTerms(){return null; }
-  
+
+  public List<String> getValuePathList()
+  {
+    return ImmutableList.of(getValuePath());
+  }
   public abstract String getValuePath();
 
   // null indicates no limit set

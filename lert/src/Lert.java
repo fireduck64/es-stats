@@ -100,6 +100,9 @@ public class Lert
     
     new LertThread(new LertAgent(this, new ConfigGeth())).start();
     new LertThread(new LertAgent(this, new ConfigEth2Validator())).start();
+    new LertThread(new LertAgent(this, new ConfigDisk("ogog","/t4",200.0))).start();
+    new LertThread(new LertAgent(this, new ConfigDisk("ogog","/var/nvme_intel",200.0))).start();
+    new LertThread(new LertAgent(this, new ConfigDisk("ogog","/var/virt",200.0))).start();
 
     //new LertThread(new LertAgent(this, new ConfigAge("dropbox","ogog"))).start();
 

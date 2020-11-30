@@ -6,6 +6,7 @@ import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.Temporal;
 import java.util.Map;
+import java.util.List;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
@@ -65,7 +66,11 @@ public class LertAgent
       ZonedDateTime now = ZonedDateTime.now();
       long age = z.until(now, ChronoUnit.MILLIS);
       //System.out.println("" + z + " " + age);
-      Double val = extractValue(source_doc, l_config.getValuePath());
+      Double val = extractValue(source_doc, l_config.getValuePathList());
+      if (val == null)
+      {
+        //System.out.println("No path: " + l_config.getValuePath() + " in " + source_doc);
+      }
       if (val != null)
       {
         if (most_recent_value == null) most_recent_value = val;
@@ -91,9 +96,22 @@ public class LertAgent
 
   }
 
-  private Double extractValue(Map<String, Object> search_doc, String path)
+  private Double extractValue(Map<String, Object> search_doc, List<String> path)
   {
-    Object o = search_doc.get(path);
+    Map<String, Object> m = search_doc;
+    Object o = null;
+
+    for(String s : path)
+    {
+      if (m == null) return null;
+      o = m.get(s);
+      if (o instanceof Map) m = (Map)o;
+      else
+      {
+        m = null;
+      }
+    }
+
     if (o == null) return null;
     if (o instanceof Long){double v = (long)o; return v;}
     if (o instanceof Integer){double v = (int)o; return v;}
