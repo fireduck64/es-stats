@@ -6,12 +6,17 @@ public class ConfigHumidity extends LertConfig
 {
   protected ImmutableMap<String, String> filter_terms;
   protected String id;
+  protected double h_min;
+  protected double h_max;
 
 
-  public ConfigHumidity(String zone, String location)
+  public ConfigHumidity(String zone, String location, double min, double max)
   {
     filter_terms = ImmutableMap.of("zone", zone, "location", location);
-    id=getIndexBase() + ".freezer." + zone + "." + location;
+    id=getIndexBase() + ".hum." + zone + "." + location;
+
+    h_min = min;
+    h_max = max;
 
   }
 
@@ -35,9 +40,11 @@ public class ConfigHumidity extends LertConfig
   public String getValuePath(){return "humidity";}
 
   @Override
-  public Double getLowVal(){return 20.0;}
+  public Double getLowVal(){return h_min;}
 
   @Override
-  public Double getHighVal(){return 65.0;}
+  public Double getHighVal(){return h_max;}
 
+  @Override
+  public boolean useLatest(){return true; }
 }

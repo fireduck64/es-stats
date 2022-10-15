@@ -54,4 +54,6 @@ public class ConfigDisk extends LertConfig
   @Override
   public Double getHighVal(){return 100.0 * 1000.0 * 1e6;}
 
+  @Override
+  public boolean useLatest(){return true; }
 }

@@ -17,6 +17,7 @@ java_library(
     "@maven//:com_google_guava_guava",
     "@maven//:com_amazonaws_aws_java_sdk_sns",
     "@maven//:com_amazonaws_aws_java_sdk_core",
+    "@maven//:com_amazonaws_aws_java_sdk_cloudwatch",
     "@maven//:org_eclipse_paho_org_eclipse_paho_client_mqttv3",
   ],
 )

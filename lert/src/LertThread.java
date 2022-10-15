@@ -14,10 +14,11 @@ public class LertThread extends PeriodicThread
   private long last_state_notify;
 
   private boolean first_pass_done;
+  private long last_state_save;
 
   public LertThread(LertAgent agent)
   {
-    super(agent.getConfig().checkIntervalMs());
+    super(agent.getConfig().checkIntervalMs(), 50.0);
     setName("Thread:" + agent.getID());
 
     this.agent = agent;
@@ -45,6 +46,11 @@ public class LertThread extends PeriodicThread
       notifyState(state, p.getB());   
       last_state = state;
     }
+    if (last_state_save + 86400000L < System.currentTimeMillis())
+    {
+      persistState(state);
+
+    }
 
     if (!state.equals(LertState.OK))
     {
@@ -70,8 +76,16 @@ public class LertThread extends PeriodicThread
 
     agent.getLert().publish( agent.getConfig().getAlertTopicArn(),agent.getID() +":" + state,sb.toString());
   
-    agent.getLert().saveDoc("lert_status", ImmutableMap.of("agent",agent.getID(),"state", state.toString()));
+    persistState(state);
     last_state_notify = System.currentTimeMillis();
+  }
+  private void persistState(LertState state)
+    throws Exception
+  {
+    //System.out.println("Persisting state: " + agent.getID() + " " + state.toString());
+    agent.getLert().saveDoc("lert_status", ImmutableMap.of("agent",agent.getID(),"state", state.toString()));
+    last_state_save=System.currentTimeMillis();
+
   }
   private void loadLastState()
     throws Exception
@@ -86,6 +100,7 @@ public class LertThread extends PeriodicThread
     else
     {
       System.out.println("No last state for: " + agent.getID());
+      last_state = LertState.OK;
     }
 
   }

@@ -14,5 +14,5 @@ EOF
 )
 
 
-df -P | awk '/^\// { print $6" "$2" "$3" "$4"" }' | python -c "$python_script"
+df -P | awk '/^\// { print $6" "$2" "$3" "$4"" }' | python3 -c "$python_script"
 

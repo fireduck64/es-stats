@@ -41,55 +41,81 @@ public class LertAgent
 
     for(SearchHit hit : hits)
     {
-      Map<String,Object> source_doc = hit.getSourceAsMap();
-      String timestamp = (String)source_doc.get("timestamp");
-      if (!timestamp.endsWith("Z"))
-      {
-        if (!timestamp.endsWith("-0700"))
-        {
-          timestamp = timestamp +"Z";
-        }
-      }
-
-      Temporal z = null;
-      
       try
       {
-        z = ZonedDateTime.parse(timestamp);
-      }
-      catch(java.time.format.DateTimeParseException e)
-      {
-        SimpleDateFormat sdf_iso = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
-        z = sdf_iso.parse(timestamp).toInstant();
-
-      }
-      ZonedDateTime now = ZonedDateTime.now();
-      long age = z.until(now, ChronoUnit.MILLIS);
-      //System.out.println("" + z + " " + age);
-      Double val = extractValue(source_doc, l_config.getValuePathList());
-      if (val == null)
-      {
-        //System.out.println("No path: " + l_config.getValuePath() + " in " + source_doc);
-      }
-      if (val != null)
-      {
-        if (most_recent_value == null) most_recent_value = val;
-
-        age_of_recent_value = Math.min(age, age_of_recent_value);
-        if (isGood(val))
+        Map<String,Object> source_doc = hit.getSourceAsMap();
+        String timestamp = (String)source_doc.get("timestamp");
+        if (!timestamp.endsWith("Z"))
         {
-          age_of_recent_good_value = Math.min(age, age_of_recent_good_value); 
+          if ((!timestamp.endsWith("-0700")) && (!timestamp.endsWith("-0800")))
+          {
+            timestamp = timestamp +"Z";
+          }
+        }
+
+        Temporal z = null;
+        
+        try
+        {
+          z = ZonedDateTime.parse(timestamp);
+        }
+        catch(java.time.format.DateTimeParseException e)
+        {
+          SimpleDateFormat sdf_iso = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
+          z = sdf_iso.parse(timestamp).toInstant();
+
+        }
+        ZonedDateTime now = ZonedDateTime.now();
+        long age = z.until(now, ChronoUnit.MILLIS);
+        //System.out.println("" + z + " " + age);
+        Double val = extractValue(source_doc, l_config.getValuePathList());
+        if (val == null)
+        {
+          //System.out.println("No path: " + l_config.getValuePath() + " in " + source_doc);
+        }
+        if (val != null)
+        {
+          if (most_recent_value == null) most_recent_value = val;
+
+          age_of_recent_value = Math.min(age, age_of_recent_value);
+          if (isGood(val))
+          {
+            age_of_recent_good_value = Math.min(age, age_of_recent_good_value); 
+          }
         }
       }
+      catch(Exception e)
+      {
+        System.out.println("Weird data point - ignoring (probably)");
+        System.out.println(e);
+      }
     }
 
-    if (age_of_recent_good_value < l_config.maxLookbackMs())
+    if (!l_config.useLatest())
     {
-      return new Pair(LertState.OK, ""+l_config.getValuePath()+": " + most_recent_value);
+      if (age_of_recent_good_value < l_config.maxLookbackMs())
+      {
+        return new Pair(LertState.OK, ""+l_config.getValuePath()+": " + most_recent_value);
+      }
+      if (age_of_recent_value < l_config.maxLookbackMs())
+      {
+        return new Pair(LertState.BAD, ""+l_config.getValuePath()+": " + most_recent_value);
+      }
     }
-    if (age_of_recent_value < l_config.maxLookbackMs())
+    else
     {
-      return new Pair(LertState.BAD, ""+l_config.getValuePath()+": " + most_recent_value);
+      if (age_of_recent_value < l_config.maxLookbackMs())
+      {
+        if (isGood(most_recent_value))
+        {
+          return new Pair(LertState.OK, ""+l_config.getValuePath()+": " + most_recent_value);
+        }
+        else
+        {
+          return new Pair(LertState.BAD, ""+l_config.getValuePath()+": " + most_recent_value);
+        }
+      }
+
     }
 
     return new Pair(LertState.MISSING, "MISSING");
@@ -99,7 +125,7 @@ public class LertAgent
   private Double extractValue(Map<String, Object> search_doc, List<String> path)
   {
     Map<String, Object> m = search_doc;
-    Object o = null;
+    Object o = m;
 
     for(String s : path)
     {
@@ -112,12 +138,7 @@ public class LertAgent
       }
     }
 
-    if (o == null) return null;
-    if (o instanceof Long){double v = (long)o; return v;}
-    if (o instanceof Integer){double v = (int)o; return v;}
-    if (o instanceof Double){double v = (double)o; return v;}
-    System.out.println("Val: " + o);
-    return null;
+    return l_config.getValue(o);
   }
 
   private boolean isGood(double v)

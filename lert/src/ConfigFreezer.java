@@ -40,4 +40,6 @@ public class ConfigFreezer extends LertConfig
   @Override
   public Double getHighVal(){return -7.0;}
 
+  @Override
+  public boolean useLatest(){return false; }
 }
