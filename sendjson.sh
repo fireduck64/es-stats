@@ -12,7 +12,7 @@ set -eu
 
 d=$(date +%Y.%m.%d)
 
-curl -X POST "http://elastic.1209k.com:9200/${zone}-${d}/_doc" -H 'Content-Type: application/json' -d@/dev/stdin |jq .
+curl -X POST "http://metrics.1209k.com:9200/${zone}-${d}/_doc" -H 'Content-Type: application/json' -d@/dev/stdin |jq .
 
 echo ""
 
