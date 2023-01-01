@@ -13,7 +13,7 @@ do
   fi
 done
 
-echo "{}" | addtag.py passed $passed host $HOST | addtime.py | sendjson.sh smartmon
+echo "{}" | addtag.py passed $passed host $HOSTNAME | addtime.py | sendjson.sh smartmon
 
 
 
