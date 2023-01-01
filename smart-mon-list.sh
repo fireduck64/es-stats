@@ -6,8 +6,7 @@ do
   f=$?
   if [ $f -eq 0 ]
   then
-    echo $dev is smart
-    smartctl -a $dev | grep Reallocated_Event_Count
+    echo $dev
 
   fi
 done

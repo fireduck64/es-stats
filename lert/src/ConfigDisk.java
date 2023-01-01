@@ -14,7 +14,8 @@ public class ConfigDisk extends LertConfig
   private final String mount;
   private final double min_free_space;
 
-
+  
+  // Space in GB
   public ConfigDisk(String host, String mount, double min_free_space)
   {
     this.host = host;
@@ -52,7 +53,7 @@ public class ConfigDisk extends LertConfig
   public Double getLowVal(){return min_free_space * 1e6;}
   
   @Override
-  public Double getHighVal(){return 100.0 * 1000.0 * 1e6;}
+  public Double getHighVal(){return 1000.0 * 1000.0 * 1e6;}
 
   @Override
   public boolean useLatest(){return true; }

@@ -65,9 +65,9 @@ public class Lert
     new LertThread(new LertAgent(this, new ConfigAirSense("crab.clawsub.h", "crabshack", "clawsub", "humidity", 30.0, 92.0))).start();
     new LertThread(new LertAgent(this, new ConfigAirSense("crab.hole.h", "crabshack", "hole", "humidity", 30.0, 100.2))).start();
     new LertThread(new LertAgent(this, new ConfigAirSense("crab.hole.t", "crabshack", "hole", "temperature", -5.0, 35.0))).start();
-    new LertThread(new LertAgent(this, new ConfigAirSense("crab.claw.h", "crabshack", "claw", "humidity", 30.0, 77.0))).start();
-    new LertThread(new LertAgent(this, new ConfigAirSense("crab.garage.t", "crabshack", "garage", "temperature", 5.0, 32.0))).start();
-    new LertThread(new LertAgent(this, new ConfigAirSense("crab.claw.t", "crabshack", "claw", "temperature", 15.0, 27.0))).start();
+    //new LertThread(new LertAgent(this, new ConfigAirSense("crab.claw.h", "crabshack", "claw", "humidity", 30.0, 77.0))).start();
+    new LertThread(new LertAgent(this, new ConfigAirSense("crab.garage.t", "crabshack", "garage", "temperature", 2.0, 32.0))).start();
+    //new LertThread(new LertAgent(this, new ConfigAirSense("crab.claw.t", "crabshack", "claw", "temperature", 15.0, 27.0))).start();
     //new LertThread(new LertAgent(this, new ConfigAirSense("crab.office.h", "crabshack", "office", "humidity", 20.0, 60.0))).start();
     //new LertThread(new LertAgent(this, new ConfigAirSense("crab.office.t", "crabshack", "office", "temperature", 16.6, 25.0))).start();
     //new LertThread(new LertAgent(this, new ConfigAirSense("attic.humidity", "attic", "room_air", "humidity", 20.0, 85.0))).start();
@@ -99,6 +99,7 @@ public class Lert
     new LertThread(new LertAgent(this, new ConfigWeb("covid19-local"))).start();
     new LertThread(new LertAgent(this, new ConfigWeb("covid19-data.1209k.com"))).start();
     new LertThread(new LertAgent(this, new ConfigWeb("snow-testshard.1209k.com"))).start();
+    new LertThread(new LertAgent(this, new ConfigWeb("trashbrain.org"))).start();
 
     new LertThread(new LertAgent(this, new ConfigSnow("teapot","snowblossom"))).start();
     new LertThread(new LertAgent(this, new ConfigSnow("teapot","snow-test-a"))).start();
@@ -145,21 +146,25 @@ public class Lert
     new LertThread(new LertAgent(this, new ConfigEth2Sync("eth2b"))).start();
     new LertThread(new LertAgent(this, new ConfigEth2Sync("hippo"))).start();
     new LertThread(new LertAgent(this, new ConfigEth2Sync("orange"))).start();
+    new LertThread(new LertAgent(this, new ConfigDisk("mastodon","/",16.0))).start();
+    new LertThread(new LertAgent(this, new ConfigDisk("mastodon","/home",80.0))).start();
     new LertThread(new LertAgent(this, new ConfigDisk("ogog","/t4",200.0))).start();
     new LertThread(new LertAgent(this, new ConfigDisk("ogog","/var/nvme_intel",200.0))).start();
     new LertThread(new LertAgent(this, new ConfigDisk("ogog","/var/virt",200.0))).start();
     new LertThread(new LertAgent(this, new ConfigDisk("zogbe","/var/virt",500.0))).start();
     new LertThread(new LertAgent(this, new ConfigDisk("zogbe","/var/virt2",500.0))).start();
     new LertThread(new LertAgent(this, new ConfigDisk("hippo","/var",800.0))).start();
+    //new LertThread(new LertAgent(this, new ConfigDisk("hippo","/stack",5000.0))).start();
     new LertThread(new LertAgent(this, new ConfigDisk("noface","/var/virt",200.0))).start();
     new LertThread(new LertAgent(this, new ConfigDisk("noface","/",50.0))).start();
     //new LertThread(new LertAgent(this, new ConfigDisk("eth2","/var/lib/docker",100.0))).start();
+    new LertThread(new LertAgent(this, new ConfigDisk("eth2","/var/lib/docker",100.0))).start();
     new LertThread(new LertAgent(this, new ConfigDisk("eth2b","/var/lib/docker",100.0))).start();
-    new LertThread(new LertAgent(this, new ConfigDisk("orange","/",500.0))).start();
+    new LertThread(new LertAgent(this, new ConfigDisk("orange","/",200.0))).start();
     new LertThread(new LertAgent(this, new ConfigDisk("orange","/bulk",1000.0))).start();
     new LertThread(new LertAgent(this, new ConfigDisk("ryzen","/bulk",4000.0))).start();
     new LertThread(new LertAgent(this, new ConfigDisk("snowblossom","/home",15.0))).start();
-    new LertThread(new LertAgent(this, new ConfigZFS("hippo","stack"))).start();
+    new LertThread(new LertAgent(this, new ConfigZFS("bucket","stack"))).start();
 
     new LertThread(new LertAgent(this, new ConfigAirQCo2("studio",850))).start();
     new LertThread(new LertAgent(this, new ConfigAirQTemp("studio",10.0,26.66))).start();
@@ -168,9 +173,10 @@ public class Lert
     new LertThread(new LertAgent(this, new ConfigAirQ("crabshack",25))).start();
     new LertThread(new LertAgent(this, new ConfigAirQ("indoor",25))).start();
     new LertThread(new LertAgent(this, new ConfigAirQ("studio",25))).start();
-    new LertThread(new LertAgent(this, new ConfigAirQ("outdoor",100))).start();
+    //new LertThread(new LertAgent(this, new ConfigAirQ("outdoor",100))).start();
     new LertThread(new LertAgent(this, new ConfigAirQ("crabshack-outdoor",100))).start();
     new LertThread(new LertAgent(this, new ConfigMD("ryzen", "md127", 6))).start();
+    new LertThread(new LertAgent(this, new ConfigMem("mastodon", 2000))).start();
     new LertThread(new LertAgent(this, new ConfigMem("noface", 8000))).start();
     new LertThread(new LertAgent(this, new ConfigMem("zogbe", 8000))).start();
     new LertThread(new LertAgent(this, new ConfigMem("eth2b", 4000))).start();
