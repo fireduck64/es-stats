@@ -1,6 +1,6 @@
 #!/bin/bash
 
-export PATH=$PATH:/home/nerd/es-stats.git
+export PATH=$PATH:/home/nerd/es-stats.git:/usr/sbin
 
 passed=0
 
