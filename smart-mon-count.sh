@@ -11,6 +11,7 @@ do
   then
     passed=$((passed+1))
   fi
+  echo "$dev - $(smartctl -j -a $dev|jq .smart_status)"
 done
 
 echo "{}" | addtag.py passed $passed host $HOSTNAME | addtime.py | sendjson.sh smartmon
