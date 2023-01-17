@@ -1,0 +1,14 @@
+apt-get install esptool
+
+
+pip3 install adafruit-ampy
+
+Don't write with esptool, can just use the build script and make deploy step
+
+
+esptool write_flash 0x0000 fireware-combined.bin
+
+esptool write_flash --flash_size detect 0x0000 ./build-GENERIC/firmware-combined.bin
+
+
+
