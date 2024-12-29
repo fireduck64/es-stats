@@ -1,6 +1,6 @@
 #!/bin/bash
 
-export PATH=$PATH:/home/nerd/es-stats.git:/usr/sbin
+export PATH=$PATH:/home/clash/es-stats.git:/usr/sbin
 
 for dev in $(smart-mon-list.sh)
 do
