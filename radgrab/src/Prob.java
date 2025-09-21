@@ -38,9 +38,11 @@ public class Prob implements WebHandler
     System.out.println(t.getURI());
     URI uri = t.getURI();
     System.out.println("Query: " + uri.getQuery());
-    System.out.println(t.getHost());
-    System.out.println(t.getRequestBodyString());
-    System.out.println(t.getRequestMethod());
+    System.out.println("  Host: " + t.getHost());
+    System.out.println("  Body: " + t.getRequestBodyString());
+    System.out.println("  Method: " + t.getRequestMethod());
+    System.out.println("  Headers: " + t.getExchange().getRequestHeaders());
+
 
     Map<String, String> query_map = splitQuery( uri.getQuery() );
     if (query_map.size() > 0)
