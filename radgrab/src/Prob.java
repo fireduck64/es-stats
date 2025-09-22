@@ -54,7 +54,7 @@ public class Prob implements WebHandler
       catch(Exception e)
       {
         e.printStackTrace();
-        throw e;
+        //throw e;
       }
     }
     else
