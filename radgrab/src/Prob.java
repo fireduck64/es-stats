@@ -43,12 +43,19 @@ public class Prob implements WebHandler
     System.out.println("  Method: " + t.getRequestMethod());
     System.out.println("  Headers: " + t.getExchange().getRequestHeaders().entrySet());
 
-
     Map<String, String> query_map = splitQuery( uri.getQuery() );
     if (query_map.size() > 0)
     {
-      t.setHttpCode(sendReportLocal(query_map));
-      sendReportGMC(uri.getQuery());
+      try
+      {
+        t.setHttpCode(sendReportLocal(query_map));
+        sendReportGMC(uri.getQuery());
+      }
+      catch(Exception e)
+      {
+        e.printStackTrace();
+        throw e;
+      }
     }
     else
     {
@@ -94,6 +101,8 @@ public class Prob implements WebHandler
     wr.write(send);
     wr.flush();
     wr.close();
+
+    System.out.println("Local metrics response: " + connection.getResponseCode());
 
     return connection.getResponseCode();
 
