@@ -15,6 +15,12 @@ import java.text.SimpleDateFormat;
 import net.minidev.json.JSONObject;
 import duckutil.NetUtil;
 
+import java.net.URL;
+import java.util.Scanner;
+import java.io.InputStream;
+import duckutil.ProcessRunner;
+
+
 public class Prob implements WebHandler
 {
   Random rnd=new Random();
@@ -38,15 +44,24 @@ public class Prob implements WebHandler
     System.out.println(t.getURI());
     URI uri = t.getURI();
     System.out.println("Query: " + uri.getQuery());
-    System.out.println(t.getHost());
-    System.out.println(t.getRequestBodyString());
-    System.out.println(t.getRequestMethod());
+    System.out.println("  Host: " + t.getHost());
+    System.out.println("  Body: " + t.getRequestBodyString());
+    System.out.println("  Method: " + t.getRequestMethod());
+    System.out.println("  Headers: " + t.getExchange().getRequestHeaders().entrySet());
 
     Map<String, String> query_map = splitQuery( uri.getQuery() );
     if (query_map.size() > 0)
     {
-      t.setHttpCode(sendReportLocal(query_map));
-      sendReportGMC(uri.getQuery());
+      try
+      {
+        t.setHttpCode(sendReportLocal(query_map));
+        sendReportGMC(uri.getQuery());
+      }
+      catch(Exception e)
+      {
+        e.printStackTrace();
+        //throw e;
+      }
     }
     else
     {
@@ -58,7 +73,29 @@ public class Prob implements WebHandler
   void sendReportGMC(String query)
     throws Exception
   {
-    System.out.println(NetUtil.getUrlLine("https://www.gmcmap.com/log2.asp?" + query));
+    String url = "https://www.gmcmap.com/log2.asp?" + query;
+
+    System.out.println("Report URL: " + url);
+
+    LinkedList<String> cmd = new LinkedList<>();
+    cmd.add("curl");
+    cmd.add("-s");
+    cmd.add(url);
+
+    ProcessRunner pr = new ProcessRunner(cmd);
+
+    System.out.println("Curl: " + pr.getError());
+    System.out.println("Curl: " + pr.getOutput());
+
+    /*URL u = new URL(url);
+    //u.openConnection().connect();
+    InputStream is = u.openStream();
+
+    byte[] buff = new byte[65536];
+
+    is.read(buff);
+    is.close();*/
+
   }
   
   int sendReportLocal(Map<String, String> query_map)
@@ -92,6 +129,8 @@ public class Prob implements WebHandler
     wr.write(send);
     wr.flush();
     wr.close();
+
+    System.out.println("Local metrics response: " + connection.getResponseCode());
 
     return connection.getResponseCode();
 
