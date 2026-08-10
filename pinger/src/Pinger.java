@@ -136,22 +136,26 @@ public class Pinger
 
     URL u = new URL(String.format("http://metrics.1209k.com:9200/ping-%s/_doc", date));
     System.out.println(u);
-    HttpURLConnection connection = (HttpURLConnection) u.openConnection();
-    connection.setDoOutput(true);
-    connection.setDoInput(true);
-    connection.setRequestMethod("POST");
-    connection.setRequestProperty("charset", "utf-8");
-    connection.setRequestProperty("Content-Length", "" + Integer.toString(send.length));
-    connection.setRequestProperty("Content-Type","application/json");
+    HttpURLConnection connection = null;
+    try {
+      connection = (HttpURLConnection) u.openConnection();
+      connection.setDoOutput(true);
+      connection.setDoInput(true);
+      connection.setRequestMethod("POST");
+      connection.setRequestProperty("charset", "utf-8");
+      connection.setRequestProperty("Content-Length", "" + Integer.toString(send.length));
+      connection.setRequestProperty("Content-Type","application/json");
 
-
-    OutputStream wr = connection.getOutputStream ();
-    wr.write(send);
-    wr.flush();
-    wr.close();
-
-    return connection.getResponseCode();
-
+      try (OutputStream wr = connection.getOutputStream()) {
+        wr.write(send);
+        wr.flush();
+      }
+      return connection.getResponseCode();
+    } finally {
+      if (connection != null) {
+        connection.disconnect();
+      }
+    }
   }
 
 }
