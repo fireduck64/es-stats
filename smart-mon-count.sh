@@ -1,21 +1,22 @@
-#!/bin/bash
+#!/usr/bin/env bash
+set -eu
 
-export PATH=$PATH:/home/clash/es-stats.git:/usr/sbin
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+export PATH="$SCRIPT_DIR:$PATH:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 
 passed=0
 
 for dev in $(smart-mon-list.sh)
 do
-  #status=$(smartctl -j -a $dev|jq .smart_status.passed)
-  status=$(smartctl -a $dev -j|jq .smartctl.exit_status)
-  if [ "$status" == "0" ]
+  json_out=$(smartctl -a "$dev" -j || true)
+  if status_msg=$(printf '%s\n' "$json_out" | smart-mon-check.py)
   then
-    passed=$((passed+1))
+    passed=$((passed + 1))
   fi
-  echo "$dev - $status"
+  echo "$dev - $status_msg"
 done
 
-echo "{}" | addtag.py passed $passed host $HOSTNAME | addtime.py | sendjson.sh smartmon
+echo "{}" | addtag.py passed "$passed" host "${HOSTNAME:-$(hostname)}" | addtime.py | sendjson.sh smartmon
 
 
 

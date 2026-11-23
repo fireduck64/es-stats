@@ -1,15 +1,12 @@
-#!/usr/local/bin/bash
+#!/usr/bin/env bash
+set -eu
 
-export PATH=$PATH:/root/es-stats.git
-
-cd /root/es-stats.git
-
-
-passed=0
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+export PATH="$SCRIPT_DIR:$PATH:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 
 for dev in $(smart-mon-list.sh)
 do
   echo -n "$dev - "
-  smartctl -j -x $dev |jq .temperature.current
+  { smartctl -j -x "$dev" || true; } | jq .temperature.current
 done
 
