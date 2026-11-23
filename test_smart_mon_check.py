@@ -97,6 +97,25 @@ def make_healthy_ata_drive(temp=38):
     }
 
 
+def make_healthy_nvme_drive(temp=62, pct_used=8, include_top_temp=True):
+    doc = {
+        "smartctl": {"exit_status": 0},
+        "device": {"name": "/dev/nvme0", "type": "nvme", "protocol": "NVMe"},
+        "smart_status": {"passed": True},
+        "nvme_smart_health_information_log": {
+            "critical_warning": 0,
+            "temperature": temp,
+            "available_spare": 100,
+            "available_spare_threshold": 10,
+            "percentage_used": pct_used,
+            "media_errors": 0,
+        },
+    }
+    if include_top_temp:
+        doc["temperature"] = {"current": temp}
+    return doc
+
+
 class SmartMonCheckTests(unittest.TestCase):
     def test_healthy_drive_passes(self):
         ok, msg = smart_mon_check.evaluate_drive(make_healthy_ata_drive(temp=38))
@@ -203,6 +222,35 @@ class SmartMonCheckTests(unittest.TestCase):
         self.assertFalse(ok)
         self.assertIn("smart_status.passed=False", msg)
 
+    def test_nvme_temp_threshold_75c_and_fallback_temp(self):
+        ok_65, msg_65 = smart_mon_check.evaluate_drive(
+            make_healthy_nvme_drive(temp=65, pct_used=12, include_top_temp=False)
+        )
+        self.assertTrue(ok_65)
+        self.assertEqual(msg_65, "OK (65C, wear=12%)")
+
+        ok_75, msg_75 = smart_mon_check.evaluate_drive(make_healthy_nvme_drive(temp=75))
+        self.assertTrue(ok_75)
+        self.assertIn("75C", msg_75)
+
+        ok_76, msg_76 = smart_mon_check.evaluate_drive(make_healthy_nvme_drive(temp=76))
+        self.assertFalse(ok_76)
+        self.assertIn("temp 76C > 75C", msg_76)
+
+    def test_nvme_health_errors_fail(self):
+        d1 = make_healthy_nvme_drive(temp=45)
+        d1["nvme_smart_health_information_log"]["media_errors"] = 1
+        ok1, msg1 = smart_mon_check.evaluate_drive(d1)
+        self.assertFalse(ok1)
+        self.assertIn("nvme media_errors=1", msg1)
+
+        d2 = make_healthy_nvme_drive(temp=45)
+        d2["nvme_smart_health_information_log"]["available_spare"] = 5
+        d2["nvme_smart_health_information_log"]["available_spare_threshold"] = 10
+        ok2, msg2 = smart_mon_check.evaluate_drive(d2)
+        self.assertFalse(ok2)
+        self.assertIn("nvme available_spare 5% < 10%", msg2)
+
     def test_cli_invalid_json_exits_nonzero(self):
         proc = subprocess.run(
             [CHECK_PATH],
@@ -228,6 +276,8 @@ class SmartMonCheckTests(unittest.TestCase):
                 "/dev/da2": (32, make_healthy_ata_drive(temp=56)),
                 # Drive with 1 pending sector despite exit 0 -> should FAIL
                 "/dev/da3": (0, None),
+                # NVMe drive at 65C -> should PASS under 75C NVMe threshold
+                "/dev/nvme0": (0, make_healthy_nvme_drive(temp=65, pct_used=4)),
             }
 
             scarred_cool = make_healthy_ata_drive(temp=39)
@@ -265,16 +315,9 @@ class SmartMonCheckTests(unittest.TestCase):
                     "args = sys.argv[1:]\n"
                     "if '--scan' in args:\n"
                     "    for d in drives:\n"
-                    "        print(f'{d} -d scsi # mock')\n"
-                    "    print('/dev/cd0 -d scsi # non-smart device')\n"
+                    "        print(f'{d} -d auto # mock')\n"
+                    "    print('/dev/nda0 -d scsi # FreeBSD duplicate CAM NVMe node')\n"
                     "    sys.exit(0)\n"
-                    "if '-i' in args:\n"
-                    "    dev = args[-1]\n"
-                    "    if dev in drives:\n"
-                    "        print('SMART support is: Enabled')\n"
-                    "        sys.exit(0)\n"
-                    "    print('SMART support is: Unavailable')\n"
-                    "    sys.exit(1)\n"
                     "dev = [a for a in args if a.startswith('/dev/')][0]\n"
                     "code, body = drives[dev]\n"
                     "print(json.dumps(body))\n"
@@ -313,10 +356,12 @@ class SmartMonCheckTests(unittest.TestCase):
             self.assertIn("/dev/da1 - OK (39C, ignored past Airflow_Temperature_Cel)", proc.stdout)
             self.assertIn("/dev/da2 - FAIL (temp 56C > 50C)", proc.stdout)
             self.assertIn("/dev/da3 - FAIL (attr 197 Current_Pending_Sector raw=1)", proc.stdout)
+            self.assertIn("/dev/nvme0 - OK (65C, wear=4%)", proc.stdout)
+            self.assertNotIn("/dev/nda0", proc.stdout)
 
             with open(payload_out, "r", encoding="utf-8") as fh:
                 posted = json.load(fh)
-            self.assertEqual(posted["passed"], 2)
+            self.assertEqual(posted["passed"], 3)
             self.assertEqual(posted["host"], "brick-test")
             self.assertIn("timestamp", posted)
 

@@ -23,12 +23,25 @@ EXIT_STATUS_BITS = (
 )
 
 
-def evaluate_drive(data, max_temp=50):
+def is_nvme_drive(data):
+    if isinstance(data.get("nvme_smart_health_information_log"), dict):
+        return True
+    dev_info = data.get("device")
+    if isinstance(dev_info, dict):
+        if str(dev_info.get("type", "")).lower() == "nvme":
+            return True
+        if str(dev_info.get("protocol", "")).upper() == "NVME":
+            return True
+    return False
+
+
+def evaluate_drive(data, max_temp=50, max_nvme_temp=75):
     if not isinstance(data, dict):
         return False, "FAIL (invalid JSON root)"
 
     reasons = []
     notes = []
+    nvme = is_nvme_drive(data)
 
     exit_status = data.get("smartctl", {}).get("exit_status")
     if not isinstance(exit_status, int) or isinstance(exit_status, bool):
@@ -84,17 +97,34 @@ def evaluate_drive(data, max_temp=50):
         media_errs = nvme_health.get("media_errors", 0)
         if media_errs != 0:
             reasons.append(f"nvme media_errors={media_errs}")
+        avail_spare = nvme_health.get("available_spare")
+        spare_thresh = nvme_health.get("available_spare_threshold")
+        if (
+            isinstance(avail_spare, int)
+            and isinstance(spare_thresh, int)
+            and avail_spare < spare_thresh
+        ):
+            reasons.append(f"nvme available_spare {avail_spare}% < {spare_thresh}%")
 
     scsi_defects = data.get("scsi_grown_defect_list")
     if isinstance(scsi_defects, int) and not isinstance(scsi_defects, bool) and scsi_defects > 0:
         reasons.append(f"scsi_grown_defect_list={scsi_defects}")
 
     temp = data.get("temperature", {}).get("current")
+    if temp is None and isinstance(nvme_health, dict):
+        temp = nvme_health.get("temperature")
+
+    temp_limit = max_nvme_temp if nvme else max_temp
     if isinstance(temp, (int, float)) and not isinstance(temp, bool):
-        if temp > max_temp:
-            reasons.append(f"temp {temp}C > {max_temp}C")
+        if temp > temp_limit:
+            reasons.append(f"temp {temp}C > {temp_limit}C")
         else:
             notes.append(f"{temp}C")
+
+    if isinstance(nvme_health, dict):
+        pct_used = nvme_health.get("percentage_used")
+        if isinstance(pct_used, int) and not isinstance(pct_used, bool):
+            notes.append(f"wear={pct_used}%")
 
     if excused_past_190:
         notes.append("ignored past Airflow_Temperature_Cel")
@@ -109,12 +139,19 @@ def evaluate_drive(data, max_temp=50):
 
 def main(argv=None):
     default_temp = int(os.environ.get("SMART_MAX_TEMP", "50"))
+    default_nvme_temp = int(os.environ.get("SMART_MAX_NVME_TEMP", "75"))
     parser = argparse.ArgumentParser(description="Evaluate smartctl -j output for a single drive.")
     parser.add_argument(
         "--max-temp",
         type=int,
         default=default_temp,
-        help="Maximum allowed current temperature in Celsius (default: %(default)s)",
+        help="Maximum allowed current temperature in Celsius for non-NVMe drives (default: %(default)s)",
+    )
+    parser.add_argument(
+        "--max-nvme-temp",
+        type=int,
+        default=default_nvme_temp,
+        help="Maximum allowed current temperature in Celsius for NVMe drives (default: %(default)s)",
     )
     parser.add_argument(
         "json_file",
@@ -134,7 +171,11 @@ def main(argv=None):
         print(f"FAIL (invalid smartctl JSON: {exc})")
         return 1
 
-    ok, message = evaluate_drive(data, max_temp=args.max_temp)
+    ok, message = evaluate_drive(
+        data,
+        max_temp=args.max_temp,
+        max_nvme_temp=args.max_nvme_temp,
+    )
     print(message)
     return 0 if ok else 1
 

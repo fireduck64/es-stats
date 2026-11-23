@@ -6,8 +6,10 @@ export PATH="$SCRIPT_DIR:$PATH:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin
 
 for dev in $(smartctl --scan | cut -d " " -f 1)
 do
-  if smartctl -i "$dev" 2>/dev/null | grep "SMART support is: Enabled" >/dev/null
-  then
-    echo "$dev"
-  fi
+  # On FreeBSD 14+, smartctl --scan lists each NVMe drive twice: /dev/ndaN (CAM
+  # wrapper, which fails smartctl INQUIRY) and /dev/nvmeN (native controller).
+  case "$dev" in
+    /dev/nda[0-9]*) continue ;;
+  esac
+  echo "$dev"
 done
