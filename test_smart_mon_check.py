@@ -21,10 +21,11 @@ smart_mon_check = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(smart_mon_check)
 
 
-def make_healthy_ata_drive(temp=38):
+def make_healthy_ata_drive(temp=38, rotation_rate=7200):
     return {
         "smartctl": {"exit_status": 0},
         "smart_status": {"passed": True},
+        "rotation_rate": rotation_rate,
         "temperature": {"current": temp},
         "ata_smart_attributes": {
             "table": [
@@ -222,20 +223,28 @@ class SmartMonCheckTests(unittest.TestCase):
         self.assertFalse(ok)
         self.assertIn("smart_status.passed=False", msg)
 
-    def test_nvme_temp_threshold_75c_and_fallback_temp(self):
-        ok_65, msg_65 = smart_mon_check.evaluate_drive(
-            make_healthy_nvme_drive(temp=65, pct_used=12, include_top_temp=False)
+    def test_sata_ssd_and_nvme_skip_spinner_temp_limit(self):
+        # SATA SSD (rotation_rate == 0) at 56C passes unless firmware flags it
+        sata_ssd = make_healthy_ata_drive(temp=56, rotation_rate=0)
+        ok_sata, msg_sata = smart_mon_check.evaluate_drive(sata_ssd)
+        self.assertTrue(ok_sata)
+        self.assertEqual(msg_sata, "OK (56C)")
+
+        # NVMe drive at 68C (with fallback nvme_smart_health_information_log temp) passes
+        ok_nvme, msg_nvme = smart_mon_check.evaluate_drive(
+            make_healthy_nvme_drive(temp=68, pct_used=12, include_top_temp=False)
         )
-        self.assertTrue(ok_65)
-        self.assertEqual(msg_65, "OK (65C, wear=12%)")
+        self.assertTrue(ok_nvme)
+        self.assertEqual(msg_nvme, "OK (68C, wear=12%)")
 
-        ok_75, msg_75 = smart_mon_check.evaluate_drive(make_healthy_nvme_drive(temp=75))
-        self.assertTrue(ok_75)
-        self.assertIn("75C", msg_75)
-
-        ok_76, msg_76 = smart_mon_check.evaluate_drive(make_healthy_nvme_drive(temp=76))
-        self.assertFalse(ok_76)
-        self.assertIn("temp 76C > 75C", msg_76)
+        # NVMe drive whose firmware trips critical_warning=2 (over-temp) fails
+        hot_nvme = make_healthy_nvme_drive(temp=71)
+        hot_nvme["smartctl"]["exit_status"] = 8
+        hot_nvme["smart_status"]["passed"] = False
+        hot_nvme["nvme_smart_health_information_log"]["critical_warning"] = 2
+        ok_hot, msg_hot = smart_mon_check.evaluate_drive(hot_nvme)
+        self.assertFalse(ok_hot)
+        self.assertIn("nvme critical_warning=2", msg_hot)
 
     def test_nvme_health_errors_fail(self):
         d1 = make_healthy_nvme_drive(temp=45)
@@ -276,7 +285,9 @@ class SmartMonCheckTests(unittest.TestCase):
                 "/dev/da2": (32, make_healthy_ata_drive(temp=56)),
                 # Drive with 1 pending sector despite exit 0 -> should FAIL
                 "/dev/da3": (0, None),
-                # NVMe drive at 65C -> should PASS under 75C NVMe threshold
+                # SATA SSD at 56C (rotation_rate == 0) -> should PASS
+                "/dev/sdb": (0, make_healthy_ata_drive(temp=56, rotation_rate=0)),
+                # NVMe drive at 65C -> should PASS
                 "/dev/nvme0": (0, make_healthy_nvme_drive(temp=65, pct_used=4)),
             }
 
@@ -356,12 +367,13 @@ class SmartMonCheckTests(unittest.TestCase):
             self.assertIn("/dev/da1 - OK (39C, ignored past Airflow_Temperature_Cel)", proc.stdout)
             self.assertIn("/dev/da2 - FAIL (temp 56C > 50C)", proc.stdout)
             self.assertIn("/dev/da3 - FAIL (attr 197 Current_Pending_Sector raw=1)", proc.stdout)
+            self.assertIn("/dev/sdb - OK (56C)", proc.stdout)
             self.assertIn("/dev/nvme0 - OK (65C, wear=4%)", proc.stdout)
             self.assertNotIn("/dev/nda0", proc.stdout)
 
             with open(payload_out, "r", encoding="utf-8") as fh:
                 posted = json.load(fh)
-            self.assertEqual(posted["passed"], 3)
+            self.assertEqual(posted["passed"], 4)
             self.assertEqual(posted["host"], "brick-test")
             self.assertIn("timestamp", posted)
 
